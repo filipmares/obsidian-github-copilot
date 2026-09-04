@@ -15,7 +15,6 @@ The chain runner system provides two distinct tool calling approaches:
 chainRunner/
 ├── BaseChainRunner.ts                 # Abstract base class with shared functionality
 ├── LLMChainRunner.ts                  # Basic LLM interaction (no tools)
-├── VaultQAChainRunner.ts              # Vault-only Q&A with retrieval
 ├── CopilotPlusChainRunner.ts          # Legacy tool calling system
 ├── AutonomousAgentChainRunner.ts   # Native tool calling with ReAct agent loop
 ├── index.ts                           # Main exports
@@ -262,32 +261,6 @@ interface ToolMetadata {
 
 All tools are created using `createLangChainTool` with Zod schemas:
 
-#### Tool with No Parameters
-
-```typescript
-const indexTool = createLangChainTool({
-  name: "indexVault",
-  description: "Index the vault to the Copilot index",
-  schema: z.object({}), // Empty object for no parameters
-  func: async () => {
-    // Tool implementation
-    return { status: "complete" };
-  },
-});
-
-// Register with metadata
-registry.register({
-  tool: indexTool,
-  metadata: {
-    id: "indexVault",
-    displayName: "Index Vault",
-    description: "Index the vault",
-    category: "file",
-    isBackground: true,
-  },
-});
-```
-
 #### Tool with Parameters
 
 ```typescript
@@ -528,7 +501,6 @@ All tools from the Copilot Plus system plus autonomous decision-making:
 - **getFileTree** - File structure exploration
 - **getCurrentTime** / **getTimeRangeMs** - Time-based queries
 - **pomodoroTool** - Productivity timer
-- **indexTool** - Vault indexing operations
 - **youtubeTranscription** - Video content analysis
 
 ### System Prompt Engineering

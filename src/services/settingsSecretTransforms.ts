@@ -10,6 +10,7 @@
  */
 
 import { DEFAULT_SETTINGS } from "@/constants";
+import { stripLegacyIndexSettings } from "@/settings/migrations/legacyIndexSettings";
 import { type CopilotSettings } from "@/settings/model";
 import { type CustomModel } from "@/aiParams";
 // Reason: do NOT import from @/logger here. The logger depends on getSettings(),
@@ -72,9 +73,10 @@ export function hasPersistedSecrets(rawData: Record<string, unknown>): boolean {
     if (typeof value === "string" && value.length > 0) return true;
   }
 
-  // Check model-level secrets
-  for (const listKey of ["activeModels", "activeEmbeddingModels"] as const) {
-    const models = rawData[listKey];
+  // Scan every top-level model-like list so credentials in a retired list are
+  // backed up before the migration strips that list from persisted settings.
+  // https://github.com/Brevilabs/obsidian-copilot-private/issues/283
+  for (const models of Object.values(rawData)) {
     if (!Array.isArray(models)) continue;
     for (const model of models) {
       if (!model || typeof model !== "object") continue;
@@ -120,10 +122,6 @@ export function stripKeychainFields(settings: CopilotSettings): CopilotSettings 
   if ("activeModels" in out) {
     out.activeModels = stripModelSecrets(settings.activeModels ?? []);
   }
-  if ("activeEmbeddingModels" in out) {
-    out.activeEmbeddingModels = stripModelSecrets(settings.activeEmbeddingModels ?? []);
-  }
-
   return out as unknown as CopilotSettings;
 }
 
@@ -155,7 +153,7 @@ function stripModelSecrets(models: CustomModel[]): CustomModel[] {
  * Returns a new object — does NOT mutate the input.
  */
 export function cleanupLegacyFields(settings: CopilotSettings): CopilotSettings {
-  const out = asRecord({ ...settings });
+  const out = asRecord(stripLegacyIndexSettings(settings));
   // Reason: these fields are from earlier dev iterations and should not persist.
   delete out.enableEncryption;
   delete out._keychainMigrated;
@@ -171,6 +169,10 @@ export function cleanupLegacyFields(settings: CopilotSettings): CopilotSettings 
   delete out.githubCopilotAccessToken;
   delete out.githubCopilotToken;
   delete out.githubCopilotTokenExpiresAt;
+  // Copilot no longer uses receipt-backed delete/re-register rebuilds for Miyo
+  // folder exclusions, so the receipt has no reader. Strip it on every load/save
+  // so a sync from a device still running an older build cannot reintroduce it.
+  delete out.miyoSyncedExclusions;
   // Copilot no longer manages MCP servers. Remove the retired nested config on
   // every load/save so headers and environment values cannot remain in data.json.
   if (out.agentMode && typeof out.agentMode === "object" && !Array.isArray(out.agentMode)) {

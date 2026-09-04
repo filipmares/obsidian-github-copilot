@@ -12,12 +12,10 @@ import { type SortStrategy, isSortStrategy } from "@/utils/recentUsageManager";
 import {
   AGENT_MAX_ITERATIONS_LIMIT,
   BUILTIN_CHAT_MODELS,
-  BUILTIN_EMBEDDING_MODELS,
   DEFAULT_OPEN_AREA,
   DEFAULT_QA_EXCLUSIONS_SETTING,
   DEFAULT_SETTINGS,
   DEFAULT_SKILLS_FOLDER,
-  EmbeddingModelProviders,
   SEND_SHORTCUT,
 } from "@/constants";
 
@@ -68,13 +66,11 @@ export interface CopilotSettings {
   siliconflowApiKey: string;
   defaultChainType: ChainType;
   defaultModelKey: string;
-  embeddingModelKey: string;
   contextTurns: number;
   lastDismissedVersion: string | null;
   // DEPRECATED: Do not use this directly, migrated to file-based system prompts
   userSystemPrompt: string;
   openAIProxyBaseUrl: string;
-  openAIEmbeddingProxyBaseUrl: string;
   stream: boolean;
   /** Configurable root folder all Copilot sub-folders derive from (default: "copilot"). */
   copilotFolder: string;
@@ -108,10 +104,8 @@ export interface CopilotSettings {
   autosaveChat: boolean;
   autoAddActiveContentToContext: boolean;
   customPromptsFolder: string;
-  indexVaultToVectorStore: string;
   chatNoteContextPath: string;
   chatNoteContextTags: string[];
-  enableIndexSync: boolean;
   debug: boolean;
   maxSourceChunks: number;
   enableInlineCitations: boolean;
@@ -119,18 +113,13 @@ export interface CopilotSettings {
   qaInclusions: string;
   groqApiKey: string;
   activeModels: Array<CustomModel>;
-  activeEmbeddingModels: Array<CustomModel>;
   promptUsageTimestamps: Record<string, number>;
   promptSortStrategy: string;
   chatHistorySortStrategy: SortStrategy;
   /** Projects config root folder in vault (default: "copilot/projects"). */
   projectsFolder: string;
-  embeddingRequestsPerMin: number;
-  embeddingBatchSize: number;
   defaultOpenArea: DEFAULT_OPEN_AREA;
   defaultSendShortcut: SEND_SHORTCUT;
-  disableIndexOnMobile: boolean;
-  numPartitions: number;
   defaultConversationNoteName: string;
   // Any valid paid license (Lite and above). undefined means never checked.
   isPaidUser: boolean | undefined;
@@ -150,16 +139,13 @@ export interface CopilotSettings {
   passMarkdownImages: boolean;
   enableAutonomousAgent: boolean;
   enableCustomPromptTemplating: boolean;
-  /** Enable semantic search using Orama for meaning-based document retrieval */
-  enableSemanticSearchV3: boolean;
   /** Enable self-host mode (e.g., Miyo) - uses self-hosted services for search, LLMs, OCR, etc. */
   enableSelfHostMode: boolean;
   /** Enable Miyo-backed indexing and semantic search when self-host mode is active */
   enableMiyo: boolean;
   /**
-   * User-controlled install of the `miyo-search` agent skill (path B: agent tool +
-   * system-prompt steering). Independent of `enableSemanticSearchV3` (path A: the
-   * Copilot chat/QA vector retrieval), which stays owned by Miyo Connect/Disconnect.
+   * User-controlled install of the `miyo-search` agent skill. This agent-tool
+   * integration is independent of the Miyo backend used by Copilot search.
    */
   enableMiyoSearchSkill: boolean;
   /** When true, omit folder_name from Miyo search requests so all indexed content is searched */
@@ -168,13 +154,6 @@ export interface CopilotSettings {
   /** API key for the self-host mode backend (if required) */
   /** Custom Miyo server URL, e.g. "http://192.168.1.10:8742" (empty = use local service discovery) */
   miyoServerUrl: string;
-  /**
-   * Fingerprint of the system root exclusions last successfully synced to the
-   * registered Miyo folder (empty = never synced). Compared against the current
-   * fingerprint to detect that Miyo's server-side exclusions went stale after a
-   * Copilot root change; see `getMiyoExclusionsFingerprint` in miyoUtils.
-   */
-  miyoSyncedExclusions: string;
   /** Which provider to use for self-host web search */
   selfHostSearchProvider: SelfHostSearchProvider;
   /** Firecrawl API key for self-host web search */
@@ -519,24 +498,6 @@ export function normalizeRootFolders(input: readonly (string | undefined)[]): st
 }
 
 /**
- * Resolve a valid embedding model key for the current settings.
- *
- * @param settings - Current Copilot settings.
- * @returns A valid embedding model key.
- */
-function resolveEmbeddingModelKey(settings: CopilotSettings): string {
-  const activeEmbeddingModelKeys = new Set(
-    (settings.activeEmbeddingModels || []).map((model) => getModelKeyFromModel(model))
-  );
-
-  if (settings.embeddingModelKey && activeEmbeddingModelKeys.has(settings.embeddingModelKey)) {
-    return settings.embeddingModelKey;
-  }
-
-  return DEFAULT_SETTINGS.embeddingModelKey;
-}
-
-/**
  * Sets the settings in the atom. Accepts either a partial object or an
  * updater function `(prev) => partial`. Prefer the updater form for any
  * read-modify-write — it routes through jotai's atom-setter callback so the
@@ -548,9 +509,7 @@ export function setSettings(
 ) {
   settingsStore.set(settingsAtom, (prev) => {
     const partial = typeof settings === "function" ? settings(prev) : settings;
-    const merged = mergeAllActiveModelsWithCoreModels({ ...prev, ...partial });
-    merged.embeddingModelKey = resolveEmbeddingModelKey(merged);
-    return merged;
+    return mergeActiveChatModelsWithCoreModels({ ...prev, ...partial });
   });
 }
 
@@ -887,10 +846,6 @@ export function resetSettings(): void {
       BUILTIN_CHAT_MODELS.map((model) => ({ ...model, enabled: true })),
       current.activeModels ?? []
     ),
-    activeEmbeddingModels: preserveModelCredentials(
-      BUILTIN_EMBEDDING_MODELS.map((model) => ({ ...model, enabled: true })),
-      current.activeEmbeddingModels ?? []
-    ),
     providers: preservedProviders,
     configuredModels: preserveConfiguredModelsForProviders(
       current.configuredModels,
@@ -942,13 +897,6 @@ export function sanitizeSettings(settings: CopilotSettings): CopilotSettings {
     settingsToSanitize.userId = uuidv4();
   }
 
-  if (!settingsToSanitize.activeEmbeddingModels) {
-    settingsToSanitize.activeEmbeddingModels = BUILTIN_EMBEDDING_MODELS.map((model) => ({
-      ...model,
-      enabled: true,
-    }));
-  }
-
   const sanitizedSettings: CopilotSettings = { ...settingsToSanitize };
   const sanitizedSettingsRecord = sanitizedSettings as unknown as Record<string, unknown>;
   delete sanitizedSettingsRecord.miyoRemoteVaultPath;
@@ -959,14 +907,13 @@ export function sanitizeSettings(settings: CopilotSettings): CopilotSettings {
   // https://github.com/logancyang/obsidian-copilot/issues/2928
   delete sanitizedSettingsRecord.amazonBedrockApiKey;
   delete sanitizedSettingsRecord.amazonBedrockRegion;
-  // Azure OpenAI is no longer a chat or embedding provider, so a stored key and
-  // its routing fields would only address a service Copilot cannot reach.
+  // Azure OpenAI is no longer a chat provider, so a stored key and its routing
+  // fields would only address a service Copilot cannot reach.
   // https://github.com/logancyang/obsidian-copilot/issues/2932
   delete sanitizedSettingsRecord.azureOpenAIApiKey;
   delete sanitizedSettingsRecord.azureOpenAIApiInstanceName;
   delete sanitizedSettingsRecord.azureOpenAIApiDeploymentName;
   delete sanitizedSettingsRecord.azureOpenAIApiVersion;
-  delete sanitizedSettingsRecord.azureOpenAIApiEmbeddingDeploymentName;
   // Copilot no longer limits how long an answer may be, so a stored limit
   // would only cut off answers the model was willing to finish.
   // https://github.com/logancyang/obsidian-copilot-preview/issues/312
@@ -1003,16 +950,6 @@ export function sanitizeSettings(settings: CopilotSettings): CopilotSettings {
   sanitizedSettings.contextTurns = isNaN(contextTurns)
     ? DEFAULT_SETTINGS.contextTurns
     : contextTurns;
-
-  const embeddingRequestsPerMin = Number(settingsToSanitize.embeddingRequestsPerMin);
-  sanitizedSettings.embeddingRequestsPerMin = isNaN(embeddingRequestsPerMin)
-    ? DEFAULT_SETTINGS.embeddingRequestsPerMin
-    : embeddingRequestsPerMin;
-
-  const embeddingBatchSize = Number(settingsToSanitize.embeddingBatchSize);
-  sanitizedSettings.embeddingBatchSize = isNaN(embeddingBatchSize)
-    ? DEFAULT_SETTINGS.embeddingBatchSize
-    : embeddingBatchSize;
 
   // Sanitize lexicalSearchRamLimit (20-1000 MB range)
   const lexicalSearchRamLimit = Number(settingsToSanitize.lexicalSearchRamLimit);
@@ -1054,11 +991,6 @@ export function sanitizeSettings(settings: CopilotSettings): CopilotSettings {
   // Ensure miyoServerUrl has a default value
   if (typeof sanitizedSettings.miyoServerUrl !== "string") {
     sanitizedSettings.miyoServerUrl = DEFAULT_SETTINGS.miyoServerUrl;
-  }
-
-  // Ensure miyoSyncedExclusions has a default value
-  if (typeof sanitizedSettings.miyoSyncedExclusions !== "string") {
-    sanitizedSettings.miyoSyncedExclusions = DEFAULT_SETTINGS.miyoSyncedExclusions;
   }
 
   // Ensure selfHostSearchProvider is a valid value
@@ -1252,10 +1184,10 @@ export function sanitizeSettings(settings: CopilotSettings): CopilotSettings {
     sanitizedSettings.chatHistorySortStrategy = DEFAULT_SETTINGS.chatHistorySortStrategy;
   }
 
-  // Fall back when the persisted chain type isn't one this build offers. A vault
-  // last used with Quick Chat's Projects mode still holds "project" here, and
-  // chain construction would throw "Unsupported chain type" on it before the
-  // user could pick anything else.
+  // Fall back when a vault still holds a retired Quick Chat mode. Both Vault QA
+  // and Projects were persisted here, and chain construction would otherwise
+  // fail before the mode picker could render.
+  // https://github.com/Brevilabs/obsidian-copilot-private/issues/286
   // https://github.com/logancyang/obsidian-copilot-preview/issues/310
   if (!Object.values(ChainType).includes(sanitizedSettings.defaultChainType)) {
     sanitizedSettings.defaultChainType = DEFAULT_SETTINGS.defaultChainType;
@@ -1765,11 +1697,8 @@ function sanitizeDeviceProfiles(raw: unknown): Record<string, DeviceAgentProfile
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
-function mergeAllActiveModelsWithCoreModels(settings: CopilotSettings): CopilotSettings {
+function mergeActiveChatModelsWithCoreModels(settings: CopilotSettings): CopilotSettings {
   settings.activeModels = mergeActiveModels(settings.activeModels, BUILTIN_CHAT_MODELS);
-  settings.activeEmbeddingModels = filterUnsupportedEmbeddingModels(
-    mergeActiveModels(settings.activeEmbeddingModels, BUILTIN_EMBEDDING_MODELS)
-  );
   return settings;
 }
 
@@ -1814,17 +1743,4 @@ function mergeActiveModels(
   });
 
   return Array.from(modelMap.values());
-}
-
-/**
- * Remove embedding models that use unsupported providers.
- *
- * @param models - Embedding models to validate.
- * @returns Filtered list containing only supported providers.
- */
-function filterUnsupportedEmbeddingModels(models: CustomModel[]): CustomModel[] {
-  const supportedProviders = new Set(Object.values(EmbeddingModelProviders));
-  return models.filter((model) =>
-    supportedProviders.has(model.provider as EmbeddingModelProviders)
-  );
 }

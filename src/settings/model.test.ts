@@ -475,26 +475,6 @@ describe("sanitizeSettings - legacy Miyo settings cleanup", () => {
     expect("enableMiyoSearch" in sanitizedRecord).toBe(false);
   });
 
-  it("defaults a missing or malformed miyoSyncedExclusions to an empty receipt", () => {
-    const withoutReceipt = {
-      ...DEFAULT_SETTINGS,
-      miyoSyncedExclusions: undefined,
-    } as unknown as CopilotSettings;
-    expect(sanitizeSettings(withoutReceipt).miyoSyncedExclusions).toBe("");
-
-    const malformed = {
-      ...DEFAULT_SETTINGS,
-      miyoSyncedExclusions: 42,
-    } as unknown as CopilotSettings;
-    expect(sanitizeSettings(malformed).miyoSyncedExclusions).toBe("");
-
-    const preserved = {
-      ...DEFAULT_SETTINGS,
-      miyoSyncedExclusions: '{"device":"d","roots":[]}',
-    };
-    expect(sanitizeSettings(preserved).miyoSyncedExclusions).toBe('{"device":"d","roots":[]}');
-  });
-
   it("assigns a userId while stripping obsolete Miyo keys", () => {
     const legacySettings = {
       ...DEFAULT_SETTINGS,
@@ -784,6 +764,17 @@ describe("model", () => {
       } as unknown as CopilotSettings);
 
       expect(out.defaultChainType).toBe(DEFAULT_SETTINGS.defaultChainType);
+    });
+
+    it("starts a vault last saved in Vault QA in Free Chat without changing its other settings (https://github.com/Brevilabs/obsidian-copilot-private/issues/286)", () => {
+      const out = sanitizeSettings({
+        ...DEFAULT_SETTINGS,
+        defaultChainType: "vault_qa",
+        contextTurns: 7,
+      } as unknown as CopilotSettings);
+
+      expect(out.defaultChainType).toBe(ChainType.LLM_CHAIN);
+      expect(out.contextTurns).toBe(7);
     });
 
     it("keeps a defaultChainType the runner still supports", () => {
@@ -1149,7 +1140,6 @@ describe("model", () => {
         azureOpenAIApiInstanceName: "my-instance",
         azureOpenAIApiDeploymentName: "chat-deploy",
         azureOpenAIApiVersion: "2025-01-01-preview",
-        azureOpenAIApiEmbeddingDeploymentName: "embed-deploy",
       };
       settingsStore.set(settingsAtom, { ...DEFAULT_SETTINGS, ...vendorConfig });
 

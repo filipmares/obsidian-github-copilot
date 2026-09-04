@@ -1,5 +1,5 @@
 import { logInfo } from "@/logger";
-import { MiyoClient } from "@/miyo/MiyoClient";
+import { MiyoClient, MiyoRequestError } from "@/miyo/MiyoClient";
 import { MiyoServiceDiscovery } from "@/miyo/MiyoServiceDiscovery";
 import { getSettings } from "@/settings/model";
 import { requestUrl, type RequestUrlResponse } from "obsidian";
@@ -44,6 +44,30 @@ describe("MiyoClient", () => {
     mockResolveBaseUrl.mockResolvedValue("http://127.0.0.1:8742");
     mockedGetInstance.mockReturnValue({
       resolveBaseUrl: mockResolveBaseUrl,
+    });
+  });
+
+  describe("MiyoRequestError", () => {
+    describe("constructor()", () => {
+      it("preserves the Miyo status and detail without changing the request message (https://github.com/Brevilabs/obsidian-copilot-private/issues/280)", () => {
+        const error = new MiyoRequestError(404, "folder not registered");
+        const errorWithoutDetail = new MiyoRequestError(503, "");
+        const unsupportedEndpoint = new MiyoRequestError(
+          501,
+          '{"error":"not_implemented"}',
+          "not_implemented"
+        );
+
+        expect(error).toBeInstanceOf(Error);
+        expect(error).toMatchObject({
+          name: "MiyoRequestError",
+          status: 404,
+          detail: "folder not registered",
+          message: "Miyo request failed with status 404: folder not registered",
+        });
+        expect(errorWithoutDetail.message).toBe("Miyo request failed with status 503");
+        expect(unsupportedEndpoint.errorCode).toBe("not_implemented");
+      });
     });
   });
 
@@ -160,18 +184,51 @@ describe("MiyoClient", () => {
     );
   });
 
-  it("throws detailed errors when a request fails", async () => {
-    mockedRequestUrl.mockResolvedValue({
-      status: 404,
-      text: "not found",
-      json: { detail: "folder not registered" },
-    } as RequestUrlResponse);
+  describe("fileStatus()", () => {
+    it("gets one file status using Miyo's encoded public path (https://github.com/Brevilabs/miyo/issues/543)", async () => {
+      mockedRequestUrl.mockResolvedValue({
+        status: 200,
+        json: {
+          status: "excluded",
+          reason: "exclude_pattern",
+          rule: "daily notes/**",
+        },
+        text: "",
+      } as RequestUrlResponse);
 
-    const client = new MiyoClient();
+      const result = await new MiyoClient().fileStatus(
+        "http://127.0.0.1:8742",
+        "Work Vault/daily notes/Today.md"
+      );
 
-    await expect(client.getFolder("http://127.0.0.1:8742", "/vault")).rejects.toThrow(
-      "Miyo request failed with status 404: folder not registered"
-    );
+      expect(result).toEqual({
+        status: "excluded",
+        reason: "exclude_pattern",
+        rule: "daily notes/**",
+      });
+      expect(mockedRequestUrl).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: "http://127.0.0.1:8742/v0/folder/file-status?file_path=Work+Vault%2Fdaily+notes%2FToday.md",
+          method: "GET",
+          throw: false,
+        })
+      );
+    });
+
+    it("preserves the old-build error code as structured data (https://github.com/Brevilabs/obsidian-copilot-private/issues/280)", async () => {
+      mockedRequestUrl.mockResolvedValue({
+        status: 501,
+        json: { error: "not_implemented" },
+        text: '{"error":"not_implemented"}',
+      } as RequestUrlResponse);
+
+      await expect(
+        new MiyoClient().fileStatus("http://127.0.0.1:8742", "vault/source.md")
+      ).rejects.toMatchObject({
+        status: 501,
+        errorCode: "not_implemented",
+      });
+    });
   });
 
   describe("checkFolderRegistration", () => {
@@ -360,7 +417,7 @@ describe("MiyoClient", () => {
       expect(mockResolveBaseUrl).toHaveBeenCalledWith({ overrideUrl: "http://127.0.0.1:9999" });
     });
 
-    it("refuses addFolder after the URL and credentials resolve, so nothing is sent", async () => {
+    it("refuses addFolder after the URL and credentials resolve, so nothing is sent (https://github.com/Brevilabs/obsidian-copilot-private/issues/284)", async () => {
       // The caller's own check runs before this method; URL resolution is
       // asynchronous, so only a hook here can stop a request whose caller went
       // stale in between.
@@ -379,88 +436,6 @@ describe("MiyoClient", () => {
 
       expect(mockResolveBaseUrl).toHaveBeenCalled();
       expect(mockedRequestUrl).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("deleteFolder", () => {
-    it("DELETEs /v0/folder with the folder name in the JSON body", async () => {
-      mockedRequestUrl.mockResolvedValue({
-        status: 200,
-        json: { deleted: true },
-        text: "",
-      } as RequestUrlResponse);
-
-      const client = new MiyoClient();
-      await client.deleteFolder("my-vault");
-
-      expect(mockedRequestUrl).toHaveBeenCalledWith(
-        expect.objectContaining({
-          url: "http://127.0.0.1:8742/v0/folder",
-          method: "DELETE",
-          contentType: "application/json",
-          body: JSON.stringify({ path: "my-vault" }),
-          throw: false,
-        })
-      );
-    });
-
-    it("treats 404 not-registered as success", async () => {
-      // The caller's goal — no registration under that name — already holds
-      // (e.g. a prior resync deleted it but never got to re-add).
-      mockedRequestUrl.mockResolvedValue({
-        status: 404,
-        json: { detail: "Folder not registered: my-vault" },
-        text: "",
-      } as RequestUrlResponse);
-
-      const client = new MiyoClient();
-      await expect(client.deleteFolder("my-vault")).resolves.toBeUndefined();
-    });
-
-    it("throws a detailed error on other failures", async () => {
-      mockedRequestUrl.mockResolvedValue({
-        status: 500,
-        json: { detail: "boom" },
-        text: "",
-      } as RequestUrlResponse);
-
-      const client = new MiyoClient();
-      await expect(client.deleteFolder("my-vault")).rejects.toThrow(
-        "Miyo delete-folder failed with status 500: boom"
-      );
-    });
-
-    it("refuses deleteFolder after the URL and credentials resolve, so nothing is sent", async () => {
-      mockedRequestUrl.mockResolvedValue({
-        status: 200,
-        json: { deleted: true },
-        text: "",
-      } as RequestUrlResponse);
-      const client = new MiyoClient();
-
-      await expect(
-        client.deleteFolder("my-vault", undefined, () => {
-          throw new Error("lifecycle expired");
-        })
-      ).rejects.toThrow("lifecycle expired");
-
-      expect(mockResolveBaseUrl).toHaveBeenCalled();
-      expect(mockedRequestUrl).not.toHaveBeenCalled();
-    });
-
-    it("sends the request when the hook is absent or returns", async () => {
-      mockedRequestUrl.mockResolvedValue({
-        status: 200,
-        json: { deleted: true },
-        text: "",
-      } as RequestUrlResponse);
-      const client = new MiyoClient();
-      const hook = jest.fn();
-
-      await client.deleteFolder("my-vault", undefined, hook);
-
-      expect(hook).toHaveBeenCalledTimes(1);
-      expect(mockedRequestUrl).toHaveBeenCalledTimes(1);
     });
   });
 

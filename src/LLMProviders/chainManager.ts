@@ -6,7 +6,6 @@ import {
   ChainRunner,
   CopilotPlusChainRunner,
   LLMChainRunner,
-  VaultQAChainRunner,
 } from "@/LLMProviders/chainRunner/index";
 import { logError, logInfo } from "@/logger";
 import { getSettings, subscribeToSettingsChange } from "@/settings/model";
@@ -20,19 +19,12 @@ import {
   HumanMessagePromptTemplate,
   MessagesPlaceholder,
 } from "@langchain/core/prompts";
-import { Document } from "@langchain/core/documents";
 import { App } from "obsidian";
 import ChatModelManager from "./chatModelManager";
 import MemoryManager from "./memoryManager";
 import { UserMemoryManager } from "@/memory/UserMemoryManager";
 
 export default class ChainManager {
-  private retrievedDocuments: Document[] = [];
-
-  public getRetrievedDocuments(): Document[] {
-    return this.retrievedDocuments;
-  }
-
   public app: App;
   public chatModelManager: ChatModelManager;
   public memoryManager: MemoryManager;
@@ -89,10 +81,6 @@ export default class ChainManager {
     }
   }
 
-  public storeRetrieverDocuments(documents: Document[]) {
-    this.retrievedDocuments = documents;
-  }
-
   /**
    * Update the active model and create a new chain with the specified model
    * name.
@@ -135,9 +123,6 @@ export default class ChainManager {
       // apply-Plus-key.
       if (this.chatModelManager.validateChatModel(this.chatModelManager.getChatModel())) {
         this.validateChainType(chainType);
-        if (options.refreshIndex) {
-          await this.refreshVaultIndex();
-        }
       } else {
         logError("createChainWithNewModel: skipping chain-type housekeeping — no chat model set.");
       }
@@ -156,8 +141,6 @@ export default class ChainManager {
     switch (chainType) {
       case ChainType.LLM_CHAIN:
         return new LLMChainRunner(this);
-      case ChainType.VAULT_QA_CHAIN:
-        return new VaultQAChainRunner(this);
       case ChainType.COPILOT_PLUS_CHAIN:
         // Use AutonomousAgentChainRunner if the setting is enabled
         if (settings.enableAutonomousAgent) {
@@ -167,17 +150,6 @@ export default class ChainManager {
       default:
         throw new Error(`Unsupported chain type: ${String(chainType)}`);
     }
-  }
-
-  /**
-   * Re-index the vault into the Orama vector store. No-op when legacy
-   * semantic search is disabled — v3 lexical search builds its index on
-   * demand and doesn't need a precomputed store.
-   */
-  private async refreshVaultIndex() {
-    if (!getSettings().enableSemanticSearchV3) return;
-    const VectorStoreManager = (await import("@/search/vectorStoreManager")).default;
-    await VectorStoreManager.getInstance().indexVaultToVectorStore(false);
   }
 
   async runChain(
