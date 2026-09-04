@@ -87,11 +87,28 @@ const ENABLED_AGENTS_RE = /^([ \t]*copilot-enabled-agents:[ \t]*)(.*)$/m;
  * user made via the UI. Returns the patched content unchanged when the field
  * is absent in either string.
  */
-function preserveEnabledAgents(existingMd: string, bundledMd: string): string {
+function preserveEnabledAgents(
+  existingMd: string,
+  bundledMd: string,
+  existingVersion: number,
+  skill: BuiltinSkill
+): string {
   const existing = existingMd.match(ENABLED_AGENTS_RE);
   if (!existing) return bundledMd;
-  // Replace the bundled copilot-enabled-agents value with the existing one.
-  return bundledMd.replace(ENABLED_AGENTS_RE, `$1${existing[2]}`);
+  const enabledAgents = existing[2]
+    .split(",")
+    .map((agent) => agent.trim())
+    .filter(Boolean);
+  for (const [agent, addedVersion] of Object.entries(skill.enabledAgentsAddedInVersion ?? {})) {
+    if (
+      addedVersion !== undefined &&
+      existingVersion < addedVersion &&
+      !enabledAgents.includes(agent)
+    ) {
+      enabledAgents.push(agent);
+    }
+  }
+  return bundledMd.replace(ENABLED_AGENTS_RE, `$1${enabledAgents.join(", ")}`);
 }
 
 /**
@@ -195,9 +212,11 @@ export async function seedBuiltinSkills(
         // agent off via the UI, copilot-enabled-agents was rewritten on disk.
         // Preserve that value in the bundled replacement so the upgrade doesn't
         // silently undo the user's preference.
-        const skillMd = existingContent
-          ? preserveEnabledAgents(existingContent, skill.skillMd)
-          : skill.skillMd;
+        const existingVersion = existingContent ? seededVersion(existingContent) : null;
+        const skillMd =
+          existingContent && existingVersion !== null
+            ? preserveEnabledAgents(existingContent, skill.skillMd, existingVersion, skill)
+            : skill.skillMd;
         // Write support files before SKILL.md so the version stamp in SKILL.md
         // only appears once all scripts are on disk. A crash between writes then
         // leaves no SKILL.md (or a stale-version one), so the next startup

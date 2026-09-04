@@ -1,6 +1,7 @@
 import type { CopilotSettings } from "@/settings/model";
 import { ClaudeBackendDescriptor } from "./claude/descriptor";
 import { CodexBackendDescriptor } from "./codex/descriptor";
+import { GitHubCopilotBackendDescriptor } from "./github-copilot/descriptor";
 import { OpencodeBackendDescriptor } from "./opencode/descriptor";
 import type { BackendDescriptor, BackendId } from "@/agentMode/session/types";
 
@@ -18,6 +19,7 @@ export const backendRegistry: Record<BackendId, BackendDescriptor> = {
   opencode: OpencodeBackendDescriptor,
   claude: ClaudeBackendDescriptor,
   codex: CodexBackendDescriptor,
+  "github-copilot": GitHubCopilotBackendDescriptor,
 };
 
 /**
@@ -41,6 +43,7 @@ export function backendDisplayOrder(): BackendDescriptor[] {
       OpencodeBackendDescriptor,
       ClaudeBackendDescriptor,
       CodexBackendDescriptor,
+      GitHubCopilotBackendDescriptor,
     ];
   }
   return displayOrderCache;

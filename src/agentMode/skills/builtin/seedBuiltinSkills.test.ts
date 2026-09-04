@@ -177,6 +177,27 @@ describe("seedBuiltinSkills", () => {
       expect(written).toContain("body v2"); // bundled body was updated
     });
 
+    it("https://github.com/logancyang/obsidian-copilot/issues/3096 adds a newly supported agent without restoring disabled agents", async () => {
+      const upgraded = {
+        ...skill(2),
+        enabledAgents: ["claude", "codex", "github-copilot", "opencode"],
+        enabledAgentsAddedInVersion: { "github-copilot": 2 },
+        skillMd: skill(2).skillMd.replace(
+          "copilot-enabled-agents: claude, codex, opencode",
+          "copilot-enabled-agents: claude, codex, github-copilot, opencode"
+        ),
+      };
+      const disabledMd = skill(1).skillMd.replace(
+        "copilot-enabled-agents: claude, codex, opencode",
+        "copilot-enabled-agents: claude"
+      );
+      const fs = memFs({ [MD]: disabledMd, [SCRIPT]: "// script v1" });
+
+      await seedBuiltinSkills({ skillsFolderRelPath: FOLDER, fs, skills: [upgraded] });
+
+      expect(fs.files.get(MD)).toContain("copilot-enabled-agents: claude, github-copilot\n");
+    });
+
     it("creates parent directories for nested support files", async () => {
       const nestedSkill: BuiltinSkill = {
         ...skill(1),

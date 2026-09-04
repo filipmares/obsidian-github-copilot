@@ -28,7 +28,7 @@ function model(configuredModelId: string, infoId: string): ConfiguredModel {
 }
 
 function settingsWith(
-  agentType: "claude" | "codex",
+  agentType: "claude" | "codex" | "github-copilot",
   enabledModels: string[],
   configuredModels: ConfiguredModel[]
 ): CopilotSettings {
@@ -67,6 +67,22 @@ describe("agentOriginEnabledModelEntries", () => {
     const settings = settingsWith("codex", ["cm1"], [model("cm1", "gpt-5/high")]);
     const entries = agentOriginEnabledModelEntries(settings, "codex", suffixDecode);
     expect(entries.map((e) => e.baseModelId)).toEqual(["gpt-5"]);
+  });
+
+  it("https://github.com/logancyang/obsidian-copilot/issues/3096 enrolls GitHub Copilot model selections as agent-origin entries", () => {
+    const settings = settingsWith(
+      "github-copilot",
+      ["cm1"],
+      [model("cm1", "claude-sonnet-4.6/high")]
+    );
+    const entries = agentOriginEnabledModelEntries(settings, "github-copilot", suffixDecode);
+    expect(entries).toEqual([
+      expect.objectContaining({
+        configuredModelId: "cm1",
+        baseModelId: "claude-sonnet-4.6",
+        credentialState: "ok",
+      }),
+    ]);
   });
 
   it("skips enabled ids with no matching configured-model row", () => {

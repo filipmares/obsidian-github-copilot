@@ -20,7 +20,7 @@ interface ConfigDialogShellProps {
 
 /**
  * Presentational layout shared by every agent's Configure dialog so the header,
- * sections, and footer stay visually consistent across the three (intentionally
+ * sections, and footer stay visually consistent across the four (intentionally
  * bespoke) bodies. Rendered inside a per-agent `ReactModal` subclass — it is not
  * itself a modal, but it does own the title, which is why its subclasses leave
  * Obsidian's native title element empty.

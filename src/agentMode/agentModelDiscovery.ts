@@ -34,6 +34,7 @@ import {
 const PROVIDER_TYPE_BY_AGENT: Record<AgentType, ProviderType> = {
   claude: "anthropic",
   codex: "openai-compatible",
+  "github-copilot": "openai-compatible",
   opencode: "openai-compatible",
 };
 
@@ -188,8 +189,8 @@ async function enrollBackend(
     agentType,
     providerType: PROVIDER_TYPE_BY_AGENT[agentType],
     displayName: descriptor.displayName,
-    // No Copilot-side key: claude/codex are CLI-managed and opencode hosts its
-    // own models, so the keychain id stays null.
+    // No Copilot-side key: Claude, Codex, and GitHub Copilot are CLI-managed,
+    // while opencode hosts its own models, so the keychain id stays null.
     apiKey: null,
     wireModelIds,
     autoEnrollModelIds,

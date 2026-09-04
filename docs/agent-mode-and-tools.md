@@ -8,11 +8,12 @@ Quick Chat remains available for lightweight conversation and is the main chat e
 
 Open [**Settings → Copilot → Basic → Agents**](settings.md#basic). Configure at least one agent, then choose the **Default backend** for new chats.
 
-| Agent        | Best starting point                             | Where model access comes from                                              |
-| ------------ | ----------------------------------------------- | -------------------------------------------------------------------------- |
-| **opencode** | Recommended for most people                     | Copilot-hosted models, your API providers, or local OpenAI-compatible APIs |
-| **Claude**   | You already use Claude Code                     | Your Claude Code installation and Anthropic account                        |
-| **Codex**    | You already use the Codex CLI and Codex account | Your Codex CLI login through the `codex-acp` adapter                       |
+| Agent              | Best starting point                             | Where model access comes from                                              |
+| ------------------ | ----------------------------------------------- | -------------------------------------------------------------------------- |
+| **opencode**       | Recommended for most people                     | Copilot-hosted models, your API providers, or local OpenAI-compatible APIs |
+| **Claude**         | You already use Claude Code                     | Your Claude Code installation and Anthropic account                        |
+| **Codex**          | You already use the Codex CLI and Codex account | Your Codex CLI login through the `codex-acp` adapter                       |
+| **GitHub Copilot** | You already use the GitHub Copilot CLI          | Models and billing from your GitHub Copilot plan                           |
 
 A one-agent chat can work without a Copilot license when you bring your own model access. An eligible paid plan adds Copilot-hosted models and cloud-backed features. [Compare Copilot plans](copilot-plus-and-self-host.md).
 
@@ -53,6 +54,17 @@ The Codex backend needs `@agentclientprotocol/codex-acp` 0.0.45 or newer. The pa
 
 The older `@zed-industries/codex-acp` package is not supported. Copilot uses the login stored by the bundled Codex CLI. Models added under **BYOK** do not join the Codex model list.
 
+### GitHub Copilot
+
+The GitHub Copilot backend packages the official GitHub Copilot SDK and connects it to the `copilot` CLI already installed on your computer. You only need to install and sign in to the CLI; Copilot supplies the SDK.
+
+1. Install GitHub Copilot CLI 1.0.79 or newer with `npm install -g @github/copilot@latest`.
+2. Run `copilot login` and complete the GitHub authentication flow.
+3. Reload Copilot. The backend automatically searches common npm, version-manager, Homebrew, and `PATH` locations.
+4. Enable the models you want and choose a default model and reasoning effort.
+
+Models, usage, and billing come from your GitHub Copilot account. The backend supports **Default**, **Plan**, and **Auto** modes, permission prompts, agent questions, cancellation, and saved-session resume. Models added under **BYOK** do not join its model list.
+
 For Windows-specific installation help, see [Windows setup for Agent Chat](agent-mode-windows-setup.md).
 
 ### Start a chat
@@ -82,7 +94,7 @@ The permission picker shows only choices supported by the current agent:
 | **Plan**    | Prepares a read-only plan before edits when the current agent supports this choice  |
 | **Auto**    | Reduces approval prompts according to the current agent's automatic permission rule |
 
-opencode supports **Default** and **Auto**. Claude supports **Default**, **Plan**, and **Auto**. Codex shows the choices supported by the installed adapter. Claude also has an **Auto mode permissions** setting that controls how much Auto may approve.
+opencode supports **Default** and **Auto**. Claude and GitHub Copilot support **Default**, **Plan**, and **Auto**. Codex shows the choices supported by the installed adapter. Claude also has an **Auto mode permissions** setting that controls how much Auto may approve.
 
 When an action needs approval, Agent Chat displays a **Permission required** card with the proposed change or tool input. Choose one of the temporary or persistent allow or deny options offered by that agent. Stopping the turn cancels unanswered requests.
 
@@ -120,13 +132,13 @@ The default model and effort saved for each mentioned agent are used for its ans
 
 ## Skills across agents
 
-Skills are reusable instruction packets built around a `SKILL.md` file. One Skill can be made available to opencode, Claude, and Codex without maintaining three copies.
+Skills are reusable instruction packets built around a `SKILL.md` file. One Skill can be made available to opencode, Claude, Codex, and GitHub Copilot without maintaining separate copies.
 
 1. Open [**Settings → Copilot → Skills**](settings.md#skills).
-2. Find a Skill and toggle the opencode, Claude, or Codex icons for the agents that should use it.
+2. Find a Skill and toggle the opencode, Claude, Codex, or GitHub Copilot icons for the agents that should use it.
 3. Type `/` in Agent Chat to choose it, or describe the task and let the agent select an enabled Skill.
 
-Shared Skills live under `<Copilot folder>/skills/`. Copilot links them into the native folders used by each agent: `.opencode/skills/`, `.claude/skills/`, and `.agents/skills/`. Skills already present in those native folders also appear in the settings list.
+Shared Skills live under `<Copilot folder>/skills/`. Copilot links them into the native folders used by each agent: `.opencode/skills/`, `.claude/skills/`, `.agents/skills/`, and `.github/skills/`. Skills already present in those native folders also appear in the settings list. GitHub Copilot also discovers `.claude/skills/` and `.agents/skills/`; Copilot prevents a managed Skill disabled for GitHub Copilot from leaking in through those locations.
 
 Custom Skills and built-in Obsidian Skills are free. Active Plus access adds cloud-backed Skills for web research, PDF reading, YouTube transcripts, X posts, and OpenArtifacts.
 

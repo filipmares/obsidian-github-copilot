@@ -69,6 +69,9 @@ const context = await esbuild.context({
     "@lezer/common",
     "@lezer/highlight",
     "@lezer/lr",
+    // GitHub Copilot uses an explicit stdio runtime. The SDK loads koffi only
+    // for its optional in-process FFI transport, which this plugin never selects.
+    "koffi",
     ...nodeBuiltinExternals,
   ],
   format: "cjs",

@@ -10,6 +10,7 @@ import {
 } from "./registry";
 import { ClaudeBackendDescriptor } from "./claude/descriptor";
 import { CodexBackendDescriptor } from "./codex/descriptor";
+import { GitHubCopilotBackendDescriptor } from "./github-copilot/descriptor";
 import { OpencodeBackendDescriptor } from "./opencode/descriptor";
 
 jest.mock("@/agentMode/backends/opencode/OpencodeInstallModal", () => ({
@@ -51,11 +52,12 @@ describe("backendRegistry", () => {
   });
 
   describe("backendDisplayOrder()", () => {
-    it("lists opencode, then Claude, then Codex", () => {
+    it("lists all four backends in stable display order (https://github.com/logancyang/obsidian-copilot/issues/3096)", () => {
       expect(backendDisplayOrder()).toEqual([
         OpencodeBackendDescriptor,
         ClaudeBackendDescriptor,
         CodexBackendDescriptor,
+        GitHubCopilotBackendDescriptor,
       ]);
     });
 
@@ -91,6 +93,7 @@ describe("backendRegistry", () => {
           OpencodeBackendDescriptor,
           ClaudeBackendDescriptor,
           CodexBackendDescriptor,
+          GitHubCopilotBackendDescriptor,
         ])
       );
     });
@@ -99,6 +102,7 @@ describe("backendRegistry", () => {
       expect(OpencodeBackendDescriptor.selfHostable).toBe(true);
       expect(ClaudeBackendDescriptor.selfHostable).toBe(false);
       expect(CodexBackendDescriptor.selfHostable).toBe(false);
+      expect(GitHubCopilotBackendDescriptor.selfHostable).toBe(false);
     });
 
     it("never warns when the mode is off", () => {
@@ -106,13 +110,15 @@ describe("backendRegistry", () => {
       expect(backendNeedsSelfHostWarning(OpencodeBackendDescriptor, off)).toBe(false);
       expect(backendNeedsSelfHostWarning(ClaudeBackendDescriptor, off)).toBe(false);
       expect(backendNeedsSelfHostWarning(CodexBackendDescriptor, off)).toBe(false);
+      expect(backendNeedsSelfHostWarning(GitHubCopilotBackendDescriptor, off)).toBe(false);
     });
 
-    it("warns on cloud agents (Claude, Codex), not opencode, when on", () => {
+    it("warns on cloud agents, not opencode, when on", () => {
       const on = baseSettings("opencode", true);
       expect(backendNeedsSelfHostWarning(OpencodeBackendDescriptor, on)).toBe(false);
       expect(backendNeedsSelfHostWarning(ClaudeBackendDescriptor, on)).toBe(true);
       expect(backendNeedsSelfHostWarning(CodexBackendDescriptor, on)).toBe(true);
+      expect(backendNeedsSelfHostWarning(GitHubCopilotBackendDescriptor, on)).toBe(true);
     });
 
     // Self-Host Mode marks but never redirects: a persisted cloud-agent
@@ -130,10 +136,11 @@ describe("backendRegistry", () => {
       );
     });
 
-    it("getCloudAgentIds is the full set of non-self-hostable backends, memoized", () => {
+    it("https://github.com/logancyang/obsidian-copilot/issues/3096 includes GitHub Copilot in the memoized cloud-agent set", () => {
       const ids = getCloudAgentIds();
       expect(ids.has("claude")).toBe(true);
       expect(ids.has("codex")).toBe(true);
+      expect(ids.has("github-copilot")).toBe(true);
       expect(ids.has("opencode")).toBe(false);
       // Stable reference across calls (drives referential stability downstream).
       expect(getCloudAgentIds()).toBe(ids);

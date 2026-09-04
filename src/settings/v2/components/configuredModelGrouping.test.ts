@@ -21,7 +21,7 @@ function byokProvider(id: string, displayName: string): Provider {
 
 function agentProvider(
   id: string,
-  agentType: "opencode" | "claude" | "codex",
+  agentType: "opencode" | "claude" | "codex" | "github-copilot",
   displayName = id
 ): Provider {
   return {
@@ -46,15 +46,22 @@ describe("partitionCandidates", () => {
   const byok = byokProvider("byok-1", "Anthropic");
   const ocAgent = agentProvider("oc-agent", "opencode", "opencode");
   const codexAgent = agentProvider("codex-agent", "codex", "Codex");
+  const githubCopilotAgent = agentProvider(
+    "github-copilot-agent",
+    "github-copilot",
+    "GitHub Copilot"
+  );
   const providers = {
     [byok.providerId]: byok,
     [ocAgent.providerId]: ocAgent,
     [codexAgent.providerId]: codexAgent,
+    [githubCopilotAgent.providerId]: githubCopilotAgent,
   };
   const models = [
     model("m-byok", "byok-1", "claude-sonnet-4-5"),
     model("m-oc", "oc-agent", "opencode/big-pickle"),
     model("m-codex", "codex-agent", "gpt-5"),
+    model("m-github-copilot", "github-copilot-agent", "claude-sonnet-4.6"),
   ];
 
   it("opencode: BYOK rows + opencode agent-origin rows; excludes other agents", () => {
@@ -80,6 +87,20 @@ describe("partitionCandidates", () => {
     expect(byokPlusCandidates).toHaveLength(0);
     expect(agentOriginCandidates.map((c) => c.configuredModel.configuredModelId)).toEqual([
       "m-codex",
+    ]);
+  });
+
+  it("https://github.com/logancyang/obsidian-copilot/issues/3096 groups only GitHub Copilot agent-origin models", () => {
+    const { byokPlusCandidates, agentOriginCandidates } = partitionCandidates(
+      models,
+      providers,
+      new Set(),
+      "github-copilot",
+      false
+    );
+    expect(byokPlusCandidates).toHaveLength(0);
+    expect(agentOriginCandidates.map((c) => c.configuredModel.configuredModelId)).toEqual([
+      "m-github-copilot",
     ]);
   });
 

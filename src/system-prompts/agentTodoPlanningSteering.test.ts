@@ -9,7 +9,7 @@ describe("AGENT_TODO_PLANNING_STEERING", () => {
 
   // The wording below is load-bearing — see the module header. These assertions keep a
   // well-meaning future edit from re-introducing the exact failure modes it was written to
-  // avoid, since the text reaches three backends and there is no other guard on it.
+  // avoid, since the text reaches four backends and there is no other guard on it.
   it("names no vendor-specific planning tool", () => {
     // A concrete tool name makes one backend try to mimic another's API.
     expect(AGENT_TODO_PLANNING_STEERING).not.toMatch(/TodoWrite|update_plan|TaskCreate|TaskUpdate/);

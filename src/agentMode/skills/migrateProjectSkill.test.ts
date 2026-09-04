@@ -261,7 +261,7 @@ describe("migrateProjectSkill", () => {
     const dump = fs.dump();
     // Duplicate is gone.
     expect(dump[`${CODEX_DIR}/foo/SKILL.md`]).toBeUndefined();
-    // Symlinks created for all three agents.
+    // Symlinks created for all four agents.
     expect(dump[`${CLAUDE_DIR}/foo`]?.kind).toBe("symlink");
     expect(dump[`${CODEX_DIR}/foo`]?.kind).toBe("symlink");
     expect(dump[`${OPENCODE_DIR}/foo`]?.kind).toBe("symlink");

@@ -28,6 +28,7 @@ const CROSS: Record<BackendId, BackendId[]> = {
   opencode: ["claude", "codex"],
   claude: [],
   codex: [],
+  "github-copilot": ["claude", "codex"],
 };
 
 const deny = (skills: Skill[], b: BackendId) => composeDenyList(skills, b, CROSS[b]);
@@ -68,6 +69,17 @@ describe("composeDenyList", () => {
     expect(deny([e], "opencode")).toEqual(["e"]);
     expect(deny([e], "claude")).toEqual([]);
     expect(deny([e], "codex")).toEqual([]);
+  });
+
+  it("https://github.com/logancyang/obsidian-copilot/issues/3096 denies cross-discovered skills that GitHub Copilot has disabled", () => {
+    const claudeOnly = skill("claude-only", ["claude"]);
+    const codexOnly = skill("codex-only", ["codex"]);
+    const enabled = skill("enabled", ["github-copilot"]);
+
+    expect(deny([claudeOnly, codexOnly, enabled], "github-copilot")).toEqual([
+      "claude-only",
+      "codex-only",
+    ]);
   });
 
   it("returns a sorted, de-duplicated list for mixed skills (A/B/C/D)", () => {

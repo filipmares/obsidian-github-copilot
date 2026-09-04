@@ -28,7 +28,7 @@ const RELAY_SKILLS = BUILTIN_SKILLS.filter((skill) => skill.name.startsWith("cop
 
 describe("builtinSkills", () => {
   describe("BUILTIN_SKILLS", () => {
-    it("ships the approved Plus and Obsidian skills to all three agents", () => {
+    it("https://github.com/logancyang/obsidian-copilot/issues/3096 ships the approved skills to all four agents", () => {
       expect(BUILTIN_SKILLS.map((s) => s.name)).toEqual([
         "copilot-web-search",
         "copilot-web-fetch",
@@ -42,7 +42,7 @@ describe("builtinSkills", () => {
         "obsidian-cli",
       ]);
       for (const skill of BUILTIN_SKILLS) {
-        expect(skill.enabledAgents).toEqual(["claude", "codex", "opencode"]);
+        expect(skill.enabledAgents).toEqual(["claude", "codex", "github-copilot", "opencode"]);
       }
     });
 
@@ -234,7 +234,7 @@ describe("builtinSkills", () => {
     it("https://github.com/Brevilabs/obsidian-copilot-private/issues/337 hands OpenArtifacts HTML through the stable host wire without exposing publication controls", () => {
       const skill = BUILTIN_SKILLS.find((item) => item.name === "openartifacts-publish");
       expect(skill).toBeDefined();
-      expect(skill!.version).toBe(1);
+      expect(skill!.version).toBe(2);
       expect(skill!.legacyName).toBe("symposium-publish");
       expect(skill!.files.map((file) => file.path)).toEqual([
         "themes/research-memo.md",
@@ -322,7 +322,12 @@ describe("builtinSkills", () => {
     it("is a separate, Miyo-gated skill — not one of the always-seeded Plus skills", () => {
       expect(BUILTIN_SKILLS.map((s) => s.name)).not.toContain("miyo-search");
       expect(MIYO_SEARCH_SKILL.name).toBe("miyo-search");
-      expect(MIYO_SEARCH_SKILL.enabledAgents).toEqual(["claude", "codex", "opencode"]);
+      expect(MIYO_SEARCH_SKILL.enabledAgents).toEqual([
+        "claude",
+        "codex",
+        "github-copilot",
+        "opencode",
+      ]);
     });
 
     const miyoScript = (ext: ".sh" | ".cmd"): string => {
@@ -433,7 +438,12 @@ describe("builtinSkills", () => {
     it("is a gated skill distinct from the always-seeded set and from Miyo search", () => {
       expect(BUILTIN_SKILLS).not.toContain(MIYO_PARSE_SKILL);
       expect(MIYO_PARSE_SKILL.name).toBe("miyo-parse");
-      expect(MIYO_PARSE_SKILL.enabledAgents).toEqual(["claude", "codex", "opencode"]);
+      expect(MIYO_PARSE_SKILL.enabledAgents).toEqual([
+        "claude",
+        "codex",
+        "github-copilot",
+        "opencode",
+      ]);
       expect(MIYO_PARSE_SKILL.skillMd).toContain(
         `copilot-builtin-version: "${MIYO_PARSE_SKILL.version}"`
       );

@@ -5,7 +5,7 @@
  * engineering tool" framing that is wrong for an Obsidian vault assistant —
  * opencode's `default.txt` (its substring picker falls through for Copilot
  * Plus model names), codex-acp's built-in prompt, and the Claude Agent SDK's
- * `claude_code` preset. Forwarding `COPILOT_PROMPT_BASE` to all three gives
+ * `claude_code` preset. Forwarding `COPILOT_PROMPT_BASE` to all four gives
  * the same "you are an Obsidian vault assistant" framing everywhere.
  *
  * `buildAgentSystemPrompt` composes the built-in payload each backend forwards:
@@ -189,7 +189,7 @@ export const COPILOT_PROMPT_BASE = `You are Obsidian Copilot, an AI assistant th
  *
  * Project *file context* (folders/notes/URLs) is NOT part of the system prompt:
  * it is delivered as a `<project_context>` block inlined into the session's
- * first user message (reachable by all three backends), built by the context
+ * first user message (reachable by all four backends), built by the context
  * materializer's `buildProjectContextBlock`.
  */
 export function buildAgentSystemPrompt(): string {

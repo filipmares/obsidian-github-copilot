@@ -25,7 +25,7 @@ const DEVICE_A = "device-a";
 const DEVICE_B = "device-b";
 
 describe("dehydrateDeviceProfile", () => {
-  it("moves device-specific flat fields into deviceProfiles[deviceId] and strips them", () => {
+  it("moves device-specific fields into the current profile", () => {
     const settings = makeSettings(
       makeAgentMode({
         claudeCli: { path: "/a/claude" },
@@ -101,7 +101,7 @@ describe("dehydrateDeviceProfile", () => {
 });
 
 describe("hydrateDeviceProfile", () => {
-  it("populates flat fields from this device's segment", () => {
+  it("hydrates fields from this device's segment", () => {
     const settings = makeSettings(
       makeAgentMode({
         deviceProfiles: {
@@ -218,7 +218,7 @@ describe("hydrate ∘ dehydrate round trip", () => {
 });
 
 describe("sanitizeSettings round-trips deviceProfiles", () => {
-  it("preserves a valid profile map and drops empty/invalid entries", () => {
+  it("preserves valid profile fields and drops invalid entries", () => {
     const raw = {
       agentMode: {
         deviceProfiles: {

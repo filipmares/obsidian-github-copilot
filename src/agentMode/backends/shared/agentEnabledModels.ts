@@ -1,5 +1,9 @@
 import type { CopilotSettings } from "@/settings/model";
-import { type ConfiguredModel, capabilitiesFromConfiguredInfo } from "@/modelManagement";
+import {
+  type AgentType,
+  type ConfiguredModel,
+  capabilitiesFromConfiguredInfo,
+} from "@/modelManagement";
 import type { EnabledModelEntry } from "@/agentMode/session/types";
 
 /** See AGENTS.md → "Referential stability". */
@@ -9,7 +13,7 @@ const EMPTY_ENABLED_ENTRIES: readonly EnabledModelEntry[] = Object.freeze([]);
 export type WireDecode = (wireId: string) => { selection: { baseModelId: string } };
 
 /**
- * The enabled-model entries for a claude / codex backend — each enabled
+ * The enabled-model entries for an all-agent-origin backend — each enabled
  * `ConfiguredModel.info.id` decoded via the descriptor's `wire.decode` to the
  * baseModelId the picker compares against `ModelEntry.baseModelId`, enriched
  * with the model's display name/description. These backends are all
@@ -21,7 +25,7 @@ export type WireDecode = (wireId: string) => { selection: { baseModelId: string 
  */
 export function agentOriginEnabledModelEntries(
   settings: CopilotSettings,
-  agentType: "claude" | "codex",
+  agentType: AgentType,
   wireDecode: WireDecode
 ): readonly EnabledModelEntry[] {
   const enabledIds = settings.backends[agentType]?.enabledModels ?? [];

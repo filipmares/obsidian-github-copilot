@@ -265,6 +265,7 @@ export interface CopilotSettings {
       opencode?: OpencodeBackendSettings;
       claude?: ClaudeBackendSettings;
       codex?: CodexBackendSettings;
+      "github-copilot"?: GitHubCopilotBackendSettings;
     };
     /**
      * Per-device agent config (binary paths, env overrides, …) keyed by a
@@ -390,6 +391,14 @@ export interface CodexBackendSettings {
   defaultMode?: CopilotMode | null;
   /** See `ClaudeBackendSettings.envOverrides`. Applied to the spawned `codex-acp` subprocess. */
   envOverrides?: Record<string, string>;
+}
+
+/** Settings slice owned by the GitHub Copilot CLI backend. */
+export interface GitHubCopilotBackendSettings {
+  /** Sticky model preference — `{ baseModelId, effort }`. Unset = use the agent's default. */
+  defaultModel?: ModelSelection | null;
+  /** Sticky permission-mode preference (default/plan/auto). Unset = the agent's natural starting mode. */
+  defaultMode?: CopilotMode | null;
 }
 
 /** Settings slice owned by the OpenCode backend. */
@@ -1303,17 +1312,24 @@ function sanitizeAgentMode(raw: unknown): CopilotSettings["agentMode"] {
   const existingOpencode = backendsRaw.opencode as Record<string, unknown> | undefined;
   const existingClaude = backendsRaw.claude as Record<string, unknown> | undefined;
   const existingCodex = backendsRaw.codex as Record<string, unknown> | undefined;
+  const existingGitHubCopilot = backendsRaw["github-copilot"] as
+    | Record<string, unknown>
+    | undefined;
 
   const opencodeSlice = existingOpencode
     ? sanitizeOpencodeBackendSettings(existingOpencode)
     : undefined;
   const claudeSlice = existingClaude ? sanitizeClaudeBackendSettings(existingClaude) : undefined;
   const codexSlice = existingCodex ? sanitizeCodexBackendSettings(existingCodex) : undefined;
+  const githubCopilotSlice = existingGitHubCopilot
+    ? sanitizeGitHubCopilotBackendSettings(existingGitHubCopilot)
+    : undefined;
 
   const backends: CopilotSettings["agentMode"]["backends"] = {};
   if (opencodeSlice) backends.opencode = opencodeSlice;
   if (claudeSlice) backends.claude = claudeSlice;
   if (codexSlice) backends.codex = codexSlice;
+  if (githubCopilotSlice) backends["github-copilot"] = githubCopilotSlice;
 
   const deviceProfiles = sanitizeDeviceProfiles(r.deviceProfiles);
 
@@ -1651,6 +1667,17 @@ function sanitizeCodexBackendSettings(raw: unknown): CodexBackendSettings {
     defaultModel: sanitizeDefaultModel(r.defaultModel),
     defaultMode: sanitizeDefaultMode(r.defaultMode),
     envOverrides: sanitizeEnvOverrides(r.envOverrides),
+  };
+}
+
+function sanitizeGitHubCopilotBackendSettings(raw: unknown): GitHubCopilotBackendSettings {
+  // Malformed synced data must not become executable runtime configuration.
+  // https://github.com/logancyang/obsidian-copilot/issues/3096
+  if (!raw || typeof raw !== "object") return {};
+  const r = raw as Record<string, unknown>;
+  return {
+    defaultModel: sanitizeDefaultModel(r.defaultModel),
+    defaultMode: sanitizeDefaultMode(r.defaultMode),
   };
 }
 

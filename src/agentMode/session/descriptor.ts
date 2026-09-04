@@ -108,7 +108,7 @@ export interface BackendDescriptor {
   /**
    * Whether this backend can run the Copilot-hosted models. `true` for backends
    * that route Copilot's provider (opencode); `false` for agents that bring
-   * their own models from their own subscription (Claude Code, Codex).
+   * their own models from their own subscription (Claude Code, Codex, GitHub Copilot).
    *
    * Read when no license is active, to decide whose section previews the locked
    * Copilot lineup — which is why it cannot be derived from the configured
@@ -382,12 +382,12 @@ export interface BackendDescriptor {
    * so a model the agent dropped for a missing/expired key — or one it no
    * longer reports at all — is never silently hidden. The signature is limited
    * to `CopilotSettings` so `session/` stays free of `@/modelManagement` — the
-   * backend implements the join. Agent-native backends (claude, codex) report
+   * backend implements the join. Agent-native backends (claude, codex, GitHub Copilot) report
    * `credentialState: "ok"` for every entry; key-bearing BYOK backends
    * (opencode) compute real per-model health. `null` opts out: the picker then
    * keeps only the active session's selection.
    */
-  getEnabledModelEntries?(settings: CopilotSettings): EnabledModelEntry[] | null;
+  getEnabledModelEntries?(settings: CopilotSettings): readonly EnabledModelEntry[] | null;
 
   /**
    * Optional: this backend's wire base id for one configured model, or `null`

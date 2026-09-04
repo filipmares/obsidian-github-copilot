@@ -23,6 +23,7 @@ module.exports = {
     "^@anthropic-ai/sdk/lib/(.*)$": "<rootDir>/node_modules/@anthropic-ai/sdk/lib/$1.js",
     "^@agentclientprotocol/sdk$": "<rootDir>/__mocks__/@agentclientprotocol/sdk.js",
     "^@anthropic-ai/claude-agent-sdk$": "<rootDir>/__mocks__/@anthropic-ai/claude-agent-sdk.js",
+    "^@github/copilot-sdk$": "<rootDir>/__mocks__/@github/copilot-sdk.js",
     // react-resizable-panels is ESM-only with no CJS build to point at; stub it.
     "^react-resizable-panels$": "<rootDir>/__mocks__/react-resizable-panels.js",
   },

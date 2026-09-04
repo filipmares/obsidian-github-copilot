@@ -9,7 +9,7 @@ function skillMd(name: string): string {
 
 describe("obsidianSkills", () => {
   describe("OBSIDIAN_SKILLS", () => {
-    it("ships the four approved skills for every Agent Mode backend", () => {
+    it("https://github.com/logancyang/obsidian-copilot/issues/3096 ships the four approved skills for every Agent Mode backend", () => {
       expect(OBSIDIAN_SKILLS.map((skill) => skill.name)).toEqual([
         "obsidian-markdown",
         "obsidian-bases",
@@ -17,25 +17,30 @@ describe("obsidianSkills", () => {
         "obsidian-cli",
       ]);
       for (const skill of OBSIDIAN_SKILLS) {
-        expect(skill.enabledAgents).toEqual(["claude", "codex", "opencode"]);
+        expect(skill.enabledAgents).toEqual(["claude", "codex", "github-copilot", "opencode"]);
         expect(skill.skillMd).toContain(`copilot-builtin-version: "${skill.version}"`);
       }
     });
 
-    it("bumps only the changed CLI skill so existing vaults receive the safety update", () => {
+    it("https://github.com/logancyang/obsidian-copilot/issues/3096 bumps skills so existing vaults add GitHub Copilot", () => {
       expect(OBSIDIAN_SKILLS.map((skill) => [skill.name, skill.version])).toEqual([
-        ["obsidian-markdown", 1],
-        ["obsidian-bases", 1],
-        ["json-canvas", 1],
-        ["obsidian-cli", 2],
+        ["obsidian-markdown", 2],
+        ["obsidian-bases", 2],
+        ["json-canvas", 2],
+        ["obsidian-cli", 3],
       ]);
     });
 
-    it("parses each SKILL.md with the same validator used by discovery", () => {
+    it("https://github.com/logancyang/obsidian-copilot/issues/3096 parses GitHub Copilot enablement from every SKILL.md", () => {
       for (const skill of OBSIDIAN_SKILLS) {
         const parsed = parseSkillFile(skill.skillMd, skill.name);
         expect(parsed.frontmatter.name).toBe(skill.name);
-        expect(parsed.frontmatter.enabledAgents).toEqual(["claude", "codex", "opencode"]);
+        expect(parsed.frontmatter.enabledAgents).toEqual([
+          "claude",
+          "codex",
+          "github-copilot",
+          "opencode",
+        ]);
       }
     });
 

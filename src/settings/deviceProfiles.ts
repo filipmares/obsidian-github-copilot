@@ -108,6 +108,7 @@ function stripDeviceFieldsFromBackends(backends: Backends | undefined): Backends
     const synced = omitKeys(backends.opencode, OPENCODE_DEVICE_KEYS);
     if (hasOwnKeys(synced)) out.opencode = synced;
   }
+  if (backends["github-copilot"]) out["github-copilot"] = backends["github-copilot"];
   return out;
 }
 
