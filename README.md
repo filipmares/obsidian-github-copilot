@@ -14,7 +14,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/dynamic/json?logo=obsidian&color=%23483699&label=downloads&query=%24%5B%22copilot%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json&style=flat-square" alt="Obsidian downloads" align="absmiddle">
-  <img src="https://img.shields.io/github/v/release/logancyang/obsidian-copilot?style=flat-square&sort=semver" alt="Latest release" align="absmiddle">
+  <img src="https://img.shields.io/github/v/release/filipmares/obsidian-github-copilot?style=flat-square&sort=semver" alt="Latest release" align="absmiddle">
 </p>
 
 <p align="center">
@@ -121,7 +121,7 @@ Your notes remain files in your vault, and local Miyo indexes stay on your devic
 
 ## Help and links
 
-[Documentation](./docs/index.md) · [YouTube](https://www.youtube.com/@loganhallucinates) · [Report a bug](https://github.com/logancyang/obsidian-copilot/issues/new?template=bug_report.md) · [Request a feature](https://github.com/logancyang/obsidian-copilot/issues/new?template=feature_request.md) · [Privacy](https://www.obsidiancopilot.com/en/privacy)
+[Documentation](./docs/index.md) · [YouTube](https://www.youtube.com/@loganhallucinates) · [Report a bug](https://github.com/filipmares/obsidian-github-copilot/issues/new?template=bug_report.md) · [Request a feature](https://github.com/filipmares/obsidian-github-copilot/issues/new?template=feature_request.md) · [Privacy](https://www.obsidiancopilot.com/en/privacy)
 
 ## Support the project
 

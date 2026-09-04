@@ -180,7 +180,7 @@ jobs:
       # workflow's OIDC identity and publishes the attestation to Sigstore's
       # public transparency log. Anyone can later verify a downloaded asset
       # was actually built by this workflow on this commit with:
-      #   gh attestation verify main.js --owner logancyang --repo logancyang/obsidian-copilot
+      #   gh attestation verify main.js --owner filipmares --repo filipmares/obsidian-github-copilot
       #
       # Runs AFTER the prerelease manifest swap so the attested manifest.json
       # exactly matches the file uploaded to the GitHub Release.

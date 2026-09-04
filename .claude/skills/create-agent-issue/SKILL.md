@@ -2,7 +2,7 @@
 name: create-agent-issue
 description: |
   Create a single high-quality GitHub issue in
-  logancyang/obsidian-copilot-preview from a TODO item, design-doc punch list
+  filipmares/obsidian-github-copilot from a TODO item, design-doc punch list
   entry, or ad-hoc feature/bug request. Each invocation is exactly one issue
   end-to-end: investigate the surface in src/, draft against the standard,
   ensure labels exist, push via gh, and (if a source file + line were given)
@@ -19,7 +19,7 @@ allowed-tools:
 # `/create-agent-issue` — produce one high-quality GitHub issue
 
 This skill creates **one** GitHub issue at a time in
-`logancyang/obsidian-copilot-preview`. It is designed to be invoked either by
+`filipmares/obsidian-github-copilot`. It is designed to be invoked either by
 a human (one-shot, end-to-end) or by two cooperating subagents (one drafts,
 one reviews and pushes).
 
@@ -151,8 +151,8 @@ Apply:
 - **Type label** — `enhancement` or `bug` when obvious; skip otherwise.
 
 Before applying, run
-`gh label list --repo logancyang/obsidian-copilot-preview` and create any
-missing label via `gh label create --repo logancyang/obsidian-copilot-preview
+`gh label list --repo filipmares/obsidian-github-copilot` and create any
+missing label via `gh label create --repo filipmares/obsidian-github-copilot
 <name> --color <hex>`. Palette:
 
 | Label        | Color     |
@@ -242,12 +242,12 @@ author with the reviewer's feedback.
 
 After all rubric items pass:
 
-1. Run `gh label list --repo logancyang/obsidian-copilot-preview` and create
+1. Run `gh label list --repo filipmares/obsidian-github-copilot` and create
    any missing labels from the palette above.
 2. Write the issue body to a temporary file (e.g.
    `/tmp/create-agent-issue-<chunk-id>.md`) — passing a body file is more
    robust than `--body` for multi-line markdown.
-3. `gh issue create --repo logancyang/obsidian-copilot-preview --title "<title>"
+3. `gh issue create --repo filipmares/obsidian-github-copilot --title "<title>"
 --label "<comma-separated labels>" --body-file <tmpfile>`. Capture the
    returned URL.
 4. Parse the issue number from the URL.
@@ -265,7 +265,7 @@ For a single line like:
 transform to:
 
 ```md
-- [ ] P1: [Improve binary detection](https://github.com/logancyang/obsidian-copilot-preview/issues/123)
+- [ ] P1: [Improve binary detection](https://github.com/filipmares/obsidian-github-copilot/issues/123)
 ```
 
 The checkbox stays unchecked. (Closing the checkbox happens later, when the

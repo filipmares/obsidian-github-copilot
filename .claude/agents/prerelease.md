@@ -75,7 +75,8 @@ Before doing any version bumping, validate the repo is releasable. Stop and surf
    # Use /releases/latest which returns only the most-recent non-prerelease,
    # non-draft release in a single call — works regardless of how many
    # prereleases have accumulated since the last stable.
-   LATEST_STABLE=$(gh api repos/logancyang/obsidian-copilot/releases/latest -q .tag_name)
+   REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+   LATEST_STABLE=$(gh api "repos/$REPO/releases/latest" -q .tag_name)
    MASTER_VERSION=$(node -p "require('./manifest.json').version")
    if [ "$LATEST_STABLE" != "$MASTER_VERSION" ]; then
      echo "DRIFT: master manifest.json.version='$MASTER_VERSION' but latest stable Release='$LATEST_STABLE'. Stop." >&2
