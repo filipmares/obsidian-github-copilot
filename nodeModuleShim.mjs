@@ -1,3 +1,5 @@
+import { createRequire } from "node:module";
+
 // Node.js built-in modules to leave external: they exist in the Electron
 // renderer both bundles run in, so esbuild must not try to resolve them from
 // disk. `@anthropic-ai/claude-agent-sdk` and its transitive deps mix the
@@ -20,10 +22,12 @@ export const nodeBuiltinExternals = [
   "events",
   "fs",
   "fs/promises",
+  "net",
   "os",
   "path",
   "process",
   "readline",
+  "stream",
   "url",
   "util",
 ];
@@ -32,6 +36,14 @@ export const nodeBuiltinExternals = [
 const nodeModuleShim = {
   name: "node-module-shim",
   setup(build) {
+    // Explicit Node transport imports must bypass vscode-jsonrpc's browser map:
+    // its browser entry lacks StreamMessageWriter, so SDK initialization throws
+    // and esbuild caches a namespace with an undefined CopilotClient.
+    // https://github.com/logancyang/obsidian-copilot/issues/3096
+    build.onResolve({ filter: /^vscode-jsonrpc\/node(?:\.js)?$/ }, (args) => ({
+      path: createRequire(args.importer).resolve("vscode-jsonrpc/lib/node/main.js"),
+    }));
+
     // Intercept node:module / module imports and provide a shim. Both prefixed
     // and bare forms are matched — @anthropic-ai/claude-agent-sdk imports the
     // bare form, while @langchain/community uses node:module.

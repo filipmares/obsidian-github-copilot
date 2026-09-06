@@ -208,7 +208,7 @@ describe("GitHubCopilotSdkBackendProcess", () => {
       );
     });
 
-    it(`${ISSUE} accepts the CommonJS default wrapper produced by the Obsidian bundle`, async () => {
+    it(`${ISSUE} accepts an injected CommonJS default wrapper`, async () => {
       const process = new GitHubCopilotSdkBackendProcess({
         binaryPath: "/usr/local/bin/copilot",
         baseDirectory: "/copilot/vault",
