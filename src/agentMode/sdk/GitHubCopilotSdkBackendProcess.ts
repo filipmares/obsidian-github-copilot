@@ -50,6 +50,7 @@ type GitHubCopilotSdkModule = Pick<
   typeof import("@github/copilot-sdk"),
   "CopilotClient" | "RuntimeConnection"
 >;
+type GitHubCopilotSdkImport = GitHubCopilotSdkModule | { default: GitHubCopilotSdkModule };
 type ReasoningEffort = NonNullable<SessionConfig["reasoningEffort"]>;
 type UserInputHandler = NonNullable<SessionConfig["onUserInputRequest"]>;
 type UserInputRequest = Parameters<UserInputHandler>[0];
@@ -126,7 +127,10 @@ export class GitHubCopilotSdkBackendProcess implements BackendProcess {
     // AgentSessionManager may preload a process before the first chat asks for
     // it; repeated starts must reuse that runtime. https://github.com/logancyang/obsidian-copilot/issues/3096
     if (this.running) return;
-    const sdk = this.opts.loadSdk ? await this.opts.loadSdk() : await import("@github/copilot-sdk");
+    const imported: GitHubCopilotSdkImport = this.opts.loadSdk
+      ? await this.opts.loadSdk()
+      : await import("@github/copilot-sdk");
+    const sdk = normalizeSdkModule(imported);
     const env = buildRuntimeEnv();
     const invocation = githubCopilotCliInvocation(this.opts.binaryPath, env);
     const client = new sdk.CopilotClient({
@@ -542,6 +546,17 @@ export class GitHubCopilotSdkBackendProcess implements BackendProcess {
       wasFreeform: !request.choices?.includes(answer),
     };
   }
+}
+
+function normalizeSdkModule(imported: GitHubCopilotSdkImport): GitHubCopilotSdkModule {
+  const sdk = "default" in imported ? imported.default : imported;
+  if (
+    typeof sdk.CopilotClient !== "function" ||
+    typeof sdk.RuntimeConnection?.forStdio !== "function"
+  ) {
+    throw new Error("The packaged GitHub Copilot SDK exports are unavailable.");
+  }
+  return sdk;
 }
 
 function githubCopilotCliInvocation(

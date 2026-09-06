@@ -207,6 +207,18 @@ describe("GitHubCopilotSdkBackendProcess", () => {
         })
       );
     });
+
+    it(`${ISSUE} accepts the CommonJS default wrapper produced by the Obsidian bundle`, async () => {
+      const process = new GitHubCopilotSdkBackendProcess({
+        binaryPath: "/usr/local/bin/copilot",
+        baseDirectory: "/copilot/vault",
+        descriptor: descriptor(),
+        loadSdk: async () => ({ default: mockSdk }) as never,
+      });
+
+      await expect(process.start()).resolves.toBeUndefined();
+      expect(process.isRunning()).toBe(true);
+    });
   });
 
   describe("isRunning()", () => {
